@@ -1,0 +1,15 @@
+[Unit]
+Description=Shadowsocks-Libev Client Service
+After=network.target
+
+[Service]
+User=root
+CapabilityBoundingSet=~CAP_SYS_ADMIN
+ExecStart=
+ExecStartPre=/home/yang/bin/shadowsocks/ss-up.sh
+ExecStart=/usr/bin/ss-redir -u -c /etc/%i.json
+ExecStopPost=/home/yang/bin/shadowsocks/ss-down.sh
+
+[Install]
+WantedBy=multi-user.target
+

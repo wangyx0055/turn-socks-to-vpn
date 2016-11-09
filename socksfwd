@@ -1,0 +1,47 @@
+#!/bin/bash
+ 
+SOCKS_SERVER=103.214.195.99 # SOCKS 服务器的 IP 地址
+SOCKS_PORT=1081 # SOCKS 服务器的端口
+GATEWAY_IP=$(route -n|egrep "^0.0.0.0"|awk -F" " '{print $2}') # 家用网关（路由器）的 IP 地址
+#BYPASS_IPS=(yyy.yyy.yyy.yyy zzz.zzz.zzz.zzz) # 不需要代理的 IP 地址
+TUN_NETWORK_DEV=tun0 # 选一个不冲突的 tun 设备号
+TUN_NETWORK_PREFIX=10.0.0 # 选一个不冲突的内网 IP 段的前缀
+ 
+start_fwd() {
+#ip tuntap del dev "$TUN_NETWORK_DEV" mode tun
+ip tuntap add dev "$TUN_NETWORK_DEV" mode tun
+ip addr add "$TUN_NETWORK_PREFIX.1/24" dev "$TUN_NETWORK_DEV"
+ip link set "$TUN_NETWORK_DEV" up
+ip route del default via "$GATEWAY_IP"
+ip route add "$SOCKS_SERVER" via "$GATEWAY_IP"
+ip route add "172.16.39.0/24" via "$GATEWAY_IP"
+for i in `cat /home/yang/bin/路由表/cn_rules.conf`
+do
+ip route add "$i" via "$GATEWAY_IP"
+done
+ip route add 0.0.0.0/1 via "$TUN_NETWORK_PREFIX.1"
+ip route add 128.0.0.0/1 via "$TUN_NETWORK_PREFIX.1"
+badvpn-tun2socks --tundev "$TUN_NETWORK_DEV" --netif-ipaddr "$TUN_NETWORK_PREFIX.2" --netif-netmask 255.255.255.0 --socks-server-addr "127.0.0.1:$SOCKS_PORT" &
+TUN2SOCKS_PID="$!"
+}
+ 
+stop_fwd() {
+ip route del 128.0.0.0/1 via "$TUN_NETWORK_PREFIX.1"
+ip route del 0.0.0.0/1 via "$TUN_NETWORK_PREFIX.1"
+ip route del "$TUN_NETWORK_PREFIX.0/24" via 0.0.0.0
+for i in `cat /home/yang/bin/路由表/cn_rules.conf`
+do
+ip route del "$i" via "$GATEWAY_IP"
+done
+ip route del "172.16.39.0/24" via "$GATEWAY_IP"
+ip route del "$SOCKS_SERVER" via "$GATEWAY_IP"
+ip route del default via "$GATEWAY_IP"
+ip route add default via "$GATEWAY_IP"
+ip link set "$TUN_NETWORK_DEV" down
+ip addr del "$TUN_NETWORK_PREFIX.1/24" dev "$TUN_NETWORK_DEV"
+ip tuntap del dev "$TUN_NETWORK_DEV" mode tun
+}
+ 
+start_fwd
+trap stop_fwd INT TERM
+wait "$TUN2SOCKS_PID"

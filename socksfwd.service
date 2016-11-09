@@ -1,0 +1,11 @@
+[Unit]
+Description=Transparent SOCKS5 forwarding
+After=network-online.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/socksfwd
+LimitNOFILE=1048576
+ 
+[Install]
+WantedBy=multi-user.target
