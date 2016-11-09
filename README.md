@@ -16,7 +16,7 @@ $ pacman -S badvpn shadowsocks-libev ipset
 假设shadowsocks配置文件为/etc/shadowsocks1.json
  
 ### 获取中国IP段
-保存在chnroutes目录下
+保存在cn_rules.conf中
 
 ### 修改启动和关闭脚本
 ```bash
@@ -29,7 +29,7 @@ SOCKS_SERVER=$SERVER_IP # SOCKS 服务器的 IP 地址，改成你自己的服�
 # Setup the ipset
 ipset -N chnroute hash:net maxelem 65536
 
-for ip in $(cat 'chnroutes/cn_rules.conf'); do
+for ip in $(cat '/home/yang/turn-socks-to-vpn/cn_rules.conf'); do
   ipset add chnroute $ip
 done
 
@@ -214,7 +214,7 @@ $ pacman -S badvpn pdnsd shadowsocks
 假设shadowsocks配置文件为/etc/shadowsocks1.json
  
 ### 获取中国IP段
-保存在chnroutes目录下
+保存在cn_rules.conf中
 
 ### 修改iptables启动和关闭脚本
 ```bash
